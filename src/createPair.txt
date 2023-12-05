@@ -1,0 +1,13 @@
+http://localhost:5000/coin/register
+Post
+
+{
+    
+    "denom": "LUNC/USDT",
+      "price": 5.00,
+      "supply": 10000,
+      "totalBuy": 5000,
+      "totalSell": 0,
+      "totalPriceBuy": 50000,
+      "totalPriceSell": 0
+}
