@@ -11,3 +11,14 @@ Post
       "totalPriceBuy": 50000,
       "totalPriceSell": 0
 }
+
+ {
+
+        "denom": "LUNC/USDT",
+          "price": 5.00,
+          "supply": 1000000,
+          "totalBuy": 500000,
+          "totalSell": 0,
+          "totalPriceBuy": 5000000,
+          "totalPriceSell": 0
+    }

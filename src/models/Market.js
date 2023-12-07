@@ -28,6 +28,7 @@ const Market = class Business {
       {
         $match: {
           Denom: symbol,
+          Status: "Executed",
         },
       },
       {
@@ -53,7 +54,7 @@ const Market = class Business {
           "_id.time": 1,
         },
       },
-    ]);
+    ]).limit(200);
 
     return obj;
   }
@@ -65,6 +66,7 @@ const Market = class Business {
       {
         $match: {
           Denom: symbol,
+          Status: "Executed",
         },
       },
       {

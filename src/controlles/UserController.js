@@ -52,6 +52,7 @@ module.exports = class UserController {
   }
   static async login(req, res) {
     const { email, password } = req.body;
+
     if (!email) {
       res.status(422).json({ message: "email requirid" });
       return;
@@ -60,16 +61,19 @@ module.exports = class UserController {
       res.status(422).json({ message: "password requirid" });
       return;
     }
+
     const user = await User.findOne({ Email: email });
     if (!user) {
       res.status(422).json({ message: "password invalid or user not Exists" });
       return;
     }
+
     const checkPassword = await bcrypt.compare(password, user.Password);
     if (!checkPassword) {
       res.status(422).json({ message: "password invalid or user not Exists" });
       return;
     }
+
     await createUserToken(user, req, res);
   }
   static async checkUser(req, res) {

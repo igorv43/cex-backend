@@ -13,8 +13,12 @@ module.exports = class MarketController {
   }
   static async find(req, res) {
     const user = await getUserByToken(req);
+    // console.log(user);
     try {
-      const obj = await Market.Model.find().sort({ createdAt: -1 });
+      const obj = await Market.Model.find({ User: { _id: user._id } }).sort({
+        createdAt: -1,
+      });
+      console.log(obj);
       res.status(200).json(obj);
     } catch (error) {
       res.status(500).json({ message: error });
@@ -24,9 +28,15 @@ module.exports = class MarketController {
     const { denom, amount, price } = req.body;
 
     if (!amount) {
-      res.status(422).json({ message: "Amount requirid" + supply });
+      res.status(422).json({ message: "Amount requirid" });
       return;
+    } else {
+      if (parseFloat(amount) <= 0) {
+        res.status(422).json({ message: "Amount requirid" });
+        return;
+      }
     }
+
     try {
       const user = await getUserByToken(req);
       const obj = new Market.Model({
@@ -36,8 +46,9 @@ module.exports = class MarketController {
         AmountExecuted: 0,
         Type: type,
         Status: "Registered",
-        User: { _id: user._id, Name: user.Name, Email: user.Email },
+        User: { _id: user._id },
       });
+      console.log("Test-", denom, amount, price);
       if (obj.Price == undefined) {
         const coin = await MarketController.#CalculateMarketPrice(
           obj,
@@ -50,6 +61,7 @@ module.exports = class MarketController {
       if (type == "buy") {
         obj.Amount = obj.Amount / obj.Price;
       }
+
       const pair = denom.split("/");
       const denom1 = pair[0];
       const denom2 = pair[1];
@@ -77,6 +89,7 @@ module.exports = class MarketController {
   static async #calculateLiquidity(type, denom, objMarket, res) {
     let listMarket = null;
     const typeDb = type == "sell" ? "buy" : "sell";
+    const coinObj = await Coin.findOne({ Denom: denom });
     if (type == "sell") {
       listMarket = await Market.Model.find({
         $and: [
@@ -84,7 +97,15 @@ module.exports = class MarketController {
           { Denom: denom },
           { Status: { $in: ["Registered", "Running"] } },
           {
-            $or: [{ Price: { $gte: objMarket.Price } }, { MarketPrice: true }],
+            $or: [
+              { Price: { $gte: objMarket.Price } },
+              {
+                $and: [
+                  { Price: { $eq: objMarket.Price } },
+                  { MarketPrice: true },
+                ],
+              },
+            ],
           },
         ],
       })
@@ -97,12 +118,23 @@ module.exports = class MarketController {
           { Denom: denom },
           { Status: { $in: ["Registered", "Running"] } },
           {
-            $or: [{ Price: { $lte: objMarket.Price } }, { MarketPrice: true }],
+            $or: [
+              { Price: { $lte: objMarket.Price } },
+              {
+                $and: [
+                  { Price: { $eq: objMarket.Price } },
+                  { MarketPrice: true },
+                ],
+              },
+            ],
           },
         ],
       })
         .sort({ createdAt: 1 })
         .limit(100);
+      if (objMarket.Price <= 2) {
+        console.log("###########", listMarket);
+      }
     }
 
     let CountAmount =
@@ -278,21 +310,25 @@ module.exports = class MarketController {
         coin.TotalBuy = coin.TotalBuy - obj.Amount;
         coin.TotalPriceBuy = coin.TotalPriceBuy - totalPrice;
       }
+
       coin.Price = coin.TotalPriceBuy / coin.Supply;
     }
     if (updated) {
       await Coin.updateOne({ _id: coin._id }, coin);
+
       global._io.emit("price_" + obj.Denom, coin);
-      await MarketController.#emitCandle();
+
+      await MarketController.#emitCandle(obj.Denom);
     }
 
     return coin;
   }
-  static async #emitCandle() {
-    const timeList = ["15_minute", "30_minute", "1_hour", "1_day"];
-    const { Denom, Interval } = global.candlestick;
+  static async #emitCandle(Denom) {
+    const timeList = ["1_minute", "15_minute", "30_minute", "1_hour", "1_day"];
+
     for (let index = 0; index < timeList.length; index++) {
       const market = await Market.candlestick(Denom, timeList[index]);
+
       global._io
         .to("candlestick_" + Denom + "_" + timeList[index])
         .emit("candlestick", market, Denom, timeList[index]);
