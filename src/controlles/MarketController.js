@@ -15,10 +15,31 @@ module.exports = class MarketController {
     const user = await getUserByToken(req);
     // console.log(user);
     try {
-      const obj = await Market.Model.find({ User: { _id: user._id } }).sort({
+      const obj = await Market.Model.find({
+        User: { _id: user._id },
+        Status: { $in: ["Executed", "Canceled"] },
+      }).sort({
         createdAt: -1,
       });
-      console.log(obj);
+      // console.log(obj);
+      res.status(200).json(obj);
+    } catch (error) {
+      res.status(500).json({ message: error });
+    }
+  }
+  static async findOpenOrders(req, res) {
+    const user = await getUserByToken(req);
+
+    try {
+      const obj = await Market.Model.find({
+        $and: [
+          { User: { _id: user._id } },
+          { Status: { $in: ["Registered", "Running"] } },
+        ],
+      }).sort({
+        createdAt: -1,
+      });
+      // console.log(obj);
       res.status(200).json(obj);
     } catch (error) {
       res.status(500).json({ message: error });
@@ -48,7 +69,7 @@ module.exports = class MarketController {
         Status: "Registered",
         User: { _id: user._id },
       });
-      console.log("Test-", denom, amount, price);
+
       if (obj.Price == undefined) {
         const coin = await MarketController.#CalculateMarketPrice(
           obj,
@@ -67,6 +88,10 @@ module.exports = class MarketController {
       const denom2 = pair[1];
 
       const newMarket = await obj.save();
+      global._io
+        .to(user._id.toString())
+        .emit("alertUser", { type: "market", data: newMarket });
+
       if (type == "sell") {
         MarketController.#SaveDenomUserPair(amount, denom1, false, {
           _id: obj.User._id,
@@ -90,53 +115,69 @@ module.exports = class MarketController {
     let listMarket = null;
     const typeDb = type == "sell" ? "buy" : "sell";
     const coinObj = await Coin.findOne({ Denom: denom });
-    if (type == "sell") {
-      listMarket = await Market.Model.find({
-        $and: [
-          { Type: typeDb },
-          { Denom: denom },
-          { Status: { $in: ["Registered", "Running"] } },
-          {
-            $or: [
-              { Price: { $gte: objMarket.Price } },
-              {
-                $and: [
-                  { Price: { $eq: objMarket.Price } },
-                  { MarketPrice: true },
-                ],
-              },
-            ],
-          },
-        ],
-      })
-        .sort({ createdAt: 1 })
-        .limit(100);
-    } else {
-      listMarket = await Market.Model.find({
-        $and: [
-          { Type: typeDb },
-          { Denom: denom },
-          { Status: { $in: ["Registered", "Running"] } },
-          {
-            $or: [
-              { Price: { $lte: objMarket.Price } },
-              {
-                $and: [
-                  { Price: { $eq: objMarket.Price } },
-                  { MarketPrice: true },
-                ],
-              },
-            ],
-          },
-        ],
-      })
-        .sort({ createdAt: 1 })
-        .limit(100);
-      if (objMarket.Price <= 2) {
-        console.log("###########", listMarket);
-      }
-    }
-
+    // if (type == "sell") {
+    //   listMarket = await Market.Model.find({
+    //     $and: [
+    //       { Type: typeDb },
+    //       { Denom: denom },
+    //       { Status: { $in: ["Registered", "Running"] } },
+    //       {
+    //         $or: [
+    //           { Price: { $gte: objMarket.Price } },
+    //           {
+    //             $and: [
+    //               { Price: { $eq: objMarket.Price } },
+    //               { MarketPrice: true },
+    //             ],
+    //           },
+    //         ],
+    //       },
+    //     ],
+    //   })
+    //     .sort({ createdAt: 1 })
+    //     .limit(100);
+    // } else {
+    //   listMarket = await Market.Model.find({
+    //     $and: [
+    //       { Type: typeDb },
+    //       { Denom: denom },
+    //       { Status: { $in: ["Registered", "Running"] } },
+    //       {
+    //         $or: [
+    //           { Price: { $lte: objMarket.Price } },
+    //           {
+    //             $and: [
+    //               { Price: { $eq: objMarket.Price } },
+    //               { MarketPrice: true },
+    //             ],
+    //           },
+    //         ],
+    //       },
+    //     ],
+    //   })
+    //     .sort({ createdAt: 1 })
+    //     .limit(100);
+    // }
+    listMarket = await Market.Model.find({
+      $and: [
+        { Type: "sell" },
+        { Denom: denom },
+        { Status: { $in: ["Registered", "Running"] } },
+        {
+          $or: [
+            { Price: { $lte: objMarket.Price } },
+            {
+              $and: [
+                { Price: { $eq: objMarket.Price } },
+                { MarketPrice: true },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+      .sort({ createdAt: 1 })
+      .limit(100);
     let CountAmount =
       objMarket.AmountExecuted == 0
         ? objMarket.Amount
@@ -154,6 +195,9 @@ module.exports = class MarketController {
           market01.Status = "Executed";
         }
         await Market.Model.updateOne({ _id: market01._id }, market01);
+        global._io
+          .to(market01.User._id.toString())
+          .emit("alertUser", { type: "market", data: market01 });
         await MarketController.#SaveToMarketExecution(
           market01,
           CountAmount,
@@ -170,6 +214,9 @@ module.exports = class MarketController {
           listMarket[i].Status = "Executed";
         }
         await Market.Model.updateOne({ _id: listMarket[i]._id }, listMarket[i]);
+        global._io
+          .to(listMarket[i].User._id.toString())
+          .emit("alertUser", { type: "market", data: listMarket[i] });
         await MarketController.#SaveToMarketExecution(
           listMarket[i],
           CountAmount,
@@ -196,6 +243,9 @@ module.exports = class MarketController {
             { _id: listMarket[i]._id },
             listMarket[i]
           );
+          global._io
+            .to(listMarket[i].User._id.toString())
+            .emit("alertUser", { type: "market", data: listMarket[i] });
           await MarketController.#SaveToMarketExecution(
             listMarket[i],
             toAmountExecuted01,
@@ -209,6 +259,9 @@ module.exports = class MarketController {
             market01.Status = "Running";
           }
           await Market.Model.updateOne({ _id: market01._id }, market01);
+          global._io
+            .to(market01.User._id.toString())
+            .emit("alertUser", { type: "market", data: market01 });
           await MarketController.#SaveToMarketExecution(
             market01,
             market01.AmountExecuted,

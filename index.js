@@ -53,21 +53,25 @@ io.on("connection", (socket) => {
       .sort({ createdAt: -1 })
       .limit(15);
     io.emit("market_LUNC/USDT", market);
-    //console.log("executa:", market);
   });
-  // const rooms = [
-  //   "candlestick_LUNC/USDT_15_minute",
-  //   "candlestick_LUNC/USDT_30_minute",
-  //   "candlestick_LUNC/1_hour",
-  //   "candlestick_LUNC/1_day",
-  // ];
-  //socket.leave("candlestick_LUNC/USDT_15_minute");
-  //socket.join("candlestick_LUNC/USDT_15_minute");
 
+  socket.on("alertUser", (idUser) => {
+    if (idUser != null) {
+      console.log("acchou id", idUser);
+      socket.join(idUser);
+
+      io.to(idUser).emit("alertUser", {
+        type: "market",
+        data: { message: "chegou ok." },
+      });
+    }
+  });
   socket.on("candlestick", async (data) => {
     const { Denom, Interval } = data;
+
     global.candlestick = data;
     socket.join("candlestick_" + Denom + "_" + Interval);
+
     const market = await Market.candlestick(Denom, Interval);
     io.to("candlestick_" + Denom + "_" + Interval).emit(
       "candlestick",
@@ -75,25 +79,11 @@ io.on("connection", (socket) => {
       Denom,
       Interval
     );
-    //console.log("candlestick_" + Denom + "_" + Interval);
   });
   socket.on("uncandlestick", async (data) => {
     const { Denom, Interval } = data;
     socket.leave("candlestick_" + Denom + "_" + Interval);
   });
-  // for (let index = 0; index < rooms.length; index++) {
-  //   const str = rooms[index].split("_");
-  //   const time = str[2] + "_" + str[3];
-  //   socket.on(rooms[index], async (data) => {
-  //     const { Denom, Interval } = data;
-  //     global.candlestick = data;
-  //     if (time === Interval) {
-  //       const market = await Market.candlestick(Denom, Interval);
-  //       io.to(rooms[index]).emit(market);
-  //       // console.log("executa:", rooms[index]);
-  //     }
-  //   });
-  // }
 
   socket.on("error", (err) => {
     if (err && err.message === "unauthorized event") {
@@ -104,5 +94,3 @@ io.on("connection", (socket) => {
 global._io = io;
 
 httpServer.listen(5000);
-
-//https://anonystick.com/blog-developer/how-to-connect-socketio-with-nodejs-use-mvc-model-2022121526841791
