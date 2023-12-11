@@ -24,6 +24,8 @@ const ChartsRoutes = require("./src/routes/ChartsRoutes");
 app.use("/charts", ChartsRoutes);
 const BankRoutes = require("./src/routes/BankRoutes");
 app.use("/bank", BankRoutes);
+const CoinLiquidityRoutes = require("./src/routes/CoinLiquidityRoutes");
+app.use("/coinLiquidity", CoinLiquidityRoutes);
 const MarketExecution = require("./src/models/MarketExecution");
 
 const httpServer = http.createServer(app);

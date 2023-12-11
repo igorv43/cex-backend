@@ -7,103 +7,130 @@ const getUserByToken = require("../helpers/get-user-by-token");
 module.exports = class CoinLiquidityController {
   static async swap(req, res, next) {
     const { offerDenom, offerAmount, askDenom } = req.body;
-
-    const user = await getUserByToken(req);
-
-    if (askDenom === "USDT") {
-      const priceMarket = await CoinLiquidityController.#PriceMarket(
-        offerDenom
-      );
-      if (priceMarket) {
-        const amount = priceMarket * offerAmount;
-        const coinLiquidity = await CoinLiquidity.findOne({
-          Denom: offerDenom,
-        });
-        if (!coinLiquidity) {
-          res
-            .status(422)
-            .json({ message: "Denom not Liquidity :" + offerDenom });
-          return;
-        } else if (coinLiquidity.Amount < amount) {
-          res
-            .status(422)
-            .json({ message: "Denom not Liquidity :" + offerDenom });
-          return;
-        }
-        CoinLiquidityController.#SaveCoinUser(amount, askDenom, "+");
-        CoinLiquidityController.#SaveCoinUser(offerAmount, offerDenom, "-");
-        CoinLiquidityController.#SaveLiquidity(offerAmount, offerDenom, "-");
-        const objHist = new CoinLiquidityHistory({
-          OfferCoin: {
-            Amount: offerAmount,
-            Denom: offerDenom,
-          },
-          AskCoin: {
-            Amount: amount,
-            Denom: askDenom,
-          },
-        });
-        objHist.save();
-      }
-    } else {
-      const priceMarket = await CoinLiquidityController.#PriceMarket(askAmount);
-      if (priceMarket) {
-        const amount = priceMarket / offerAmount;
-        CoinLiquidityController.#SaveCoinUser(amount, askDenom, "+");
-        CoinLiquidityController.#SaveCoinUser(offerAmount, offerDenom, "-");
-        CoinLiquidityController.#SaveLiquidity(amount, askDenom, "+");
-        const objHist = new CoinLiquidityHistory({
-          OfferCoin: {
-            Amount: offerAmount,
-            Denom: offerDenom,
-          },
-          AskCoin: {
-            Amount: amount,
-            Denom: askDenom,
-          },
-        });
-        objHist.save();
-      }
+    console.log(offerDenom, offerAmount, askDenom);
+    if (offerDenom === "" || askDenom === "" || offerAmount === null) {
+      res.status(422).json({ message: "Error try later." });
+      return;
     }
-    res.status(200).json({
-      message: "exchange carried out successfully",
-      data: { offerDenom, offerAmount, askDenom },
-    });
+    try {
+      const user = await getUserByToken(req);
+
+      if (askDenom === "USDT") {
+        const priceMarket = await CoinLiquidityController.#PriceMarket(
+          offerDenom
+        );
+        if (priceMarket) {
+          const amount = offerAmount * priceMarket.Price;
+          const coinLiquidity = await CoinLiquidity.findOne({
+            Denom: offerDenom,
+          });
+          if (!coinLiquidity) {
+            res
+              .status(422)
+              .json({ message: "Denom not Liquidity :" + offerDenom });
+            return;
+          } else if (coinLiquidity.Amount < amount) {
+            res
+              .status(422)
+              .json({ message: "Denom not Liquidity :" + offerDenom });
+            return;
+          }
+          CoinLiquidityController.#SaveCoinUser(amount, askDenom, user, "+");
+          CoinLiquidityController.#SaveCoinUser(
+            offerAmount,
+            offerDenom,
+            user,
+            "-"
+          );
+          CoinLiquidityController.#SaveLiquidity(offerAmount, offerDenom, "-");
+          const objHist = new CoinLiquidityHistory({
+            OfferCoin: {
+              Amount: offerAmount,
+              Denom: offerDenom,
+            },
+            AskCoin: {
+              Amount: amount,
+              Denom: askDenom,
+            },
+          });
+          objHist.save();
+        }
+      } else {
+        const priceMarket = await CoinLiquidityController.#PriceMarket(
+          askDenom
+        );
+        if (priceMarket) {
+          const amount = offerAmount / priceMarket.Price;
+
+          CoinLiquidityController.#SaveCoinUser(amount, askDenom, user, "+");
+          CoinLiquidityController.#SaveCoinUser(
+            offerAmount,
+            offerDenom,
+            user,
+            "-"
+          );
+          CoinLiquidityController.#SaveLiquidity(amount, askDenom, "+");
+          const objHist = new CoinLiquidityHistory({
+            OfferCoin: {
+              Amount: offerAmount,
+              Denom: offerDenom,
+            },
+            AskCoin: {
+              Amount: amount,
+              Denom: askDenom,
+            },
+          });
+          objHist.save();
+        }
+      }
+      res.status(200).json({
+        message: "exchange carried out successfully",
+        data: { offerDenom, offerAmount, askDenom },
+      });
+    } catch (e) {
+      res.status(500).json({ message: e });
+    }
   }
   static async #PriceMarket(denom) {
     return await Coin.findOne({ Denom: denom + "/USDT" });
   }
   static async #SaveCoinUser(amount, denom, user, operator) {
-    const coinUser = await CoinUser.findOne({ Denom: denom });
-    if (operator === "+") {
-      amount = coinUser.Amount + amount;
-    } else {
-      amount = coinUser.Amount - amount;
-    }
-
-    const obj = new CoinUser({
-      Amount: amount,
+    const coinUser = await CoinUser.findOne({
       Denom: denom,
       User: { _id: user._id },
     });
-    obj.save();
+    if (coinUser) {
+      if (operator === "+") {
+        coinUser.Amount = coinUser.Amount + amount;
+      } else {
+        coinUser.Amount = coinUser.Amount - amount;
+      }
+      await CoinUser.updateOne({ _id: coinUser._id }, coinUser);
+    } else {
+      const obj = new CoinUser({
+        Amount: amount,
+        Denom: denom,
+        User: { _id: user._id },
+      });
+      obj.save();
+    }
   }
   static async #SaveLiquidity(amount, denom, operator) {
     const coinLiquidity = await CoinLiquidity.findOne({ Denom: denom });
     const obj = new CoinLiquidity({
-      Amount: offerAmount,
-      Denom: offerDenom,
+      Amount: amount,
+      Denom: denom,
     });
     if (!coinLiquidity) {
       obj.save();
     } else {
       if (operator === "+") {
-        obj.Amount = coinLiquidity.Amount + amount;
+        coinLiquidity.Amount = coinLiquidity.Amount + amount;
       } else {
-        obj.Amount = coinLiquidity.Amount - amount;
+        coinLiquidity.Amount = coinLiquidity.Amount - amount;
       }
 
-      await CoinLiquidity.updateOne({ _id: coinLiquidity._id }, obj);
+      await CoinLiquidity.updateOne({ _id: coinLiquidity._id }, coinLiquidity);
     }
   }
 };
