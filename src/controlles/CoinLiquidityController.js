@@ -21,20 +21,7 @@ module.exports = class CoinLiquidityController {
         );
         if (priceMarket) {
           const amount = offerAmount * priceMarket.Price;
-          const coinLiquidity = await CoinLiquidity.findOne({
-            Denom: offerDenom,
-          });
-          if (!coinLiquidity) {
-            res
-              .status(422)
-              .json({ message: "Denom not Liquidity :" + offerDenom });
-            return;
-          } else if (coinLiquidity.Amount < amount) {
-            res
-              .status(422)
-              .json({ message: "Denom not Liquidity :" + offerDenom });
-            return;
-          }
+
           CoinLiquidityController.#SaveCoinUser(amount, askDenom, user, "+");
           CoinLiquidityController.#SaveCoinUser(
             offerAmount,
@@ -42,7 +29,7 @@ module.exports = class CoinLiquidityController {
             user,
             "-"
           );
-          CoinLiquidityController.#SaveLiquidity(offerAmount, offerDenom, "-");
+          CoinLiquidityController.#SaveLiquidity(offerAmount, offerDenom, "+");
           const objHist = new CoinLiquidityHistory({
             OfferCoin: {
               Amount: offerAmount,
@@ -61,7 +48,20 @@ module.exports = class CoinLiquidityController {
         );
         if (priceMarket) {
           const amount = offerAmount / priceMarket.Price;
-
+          const coinLiquidity = await CoinLiquidity.findOne({
+            Denom: askDenom,
+          });
+          if (!coinLiquidity) {
+            res
+              .status(422)
+              .json({ message: "Denom not Liquidity :" + askDenom });
+            return;
+          } else if (coinLiquidity.Amount < amount) {
+            res
+              .status(422)
+              .json({ message: "Denom not Liquidity :" + askDenom });
+            return;
+          }
           CoinLiquidityController.#SaveCoinUser(amount, askDenom, user, "+");
           CoinLiquidityController.#SaveCoinUser(
             offerAmount,
@@ -69,7 +69,7 @@ module.exports = class CoinLiquidityController {
             user,
             "-"
           );
-          CoinLiquidityController.#SaveLiquidity(amount, askDenom, "+");
+          CoinLiquidityController.#SaveLiquidity(amount, askDenom, "-");
           const objHist = new CoinLiquidityHistory({
             OfferCoin: {
               Amount: offerAmount,
@@ -101,14 +101,14 @@ module.exports = class CoinLiquidityController {
     });
     if (coinUser) {
       if (operator === "+") {
-        coinUser.Amount = coinUser.Amount + amount;
+        coinUser.Amount = coinUser.Amount + parseFloat(amount);
       } else {
-        coinUser.Amount = coinUser.Amount - amount;
+        coinUser.Amount = coinUser.Amount - parseFloat(amount);
       }
       await CoinUser.updateOne({ _id: coinUser._id }, coinUser);
     } else {
       const obj = new CoinUser({
-        Amount: amount,
+        Amount: parseFloat(amount),
         Denom: denom,
         User: { _id: user._id },
       });
@@ -118,16 +118,16 @@ module.exports = class CoinLiquidityController {
   static async #SaveLiquidity(amount, denom, operator) {
     const coinLiquidity = await CoinLiquidity.findOne({ Denom: denom });
     const obj = new CoinLiquidity({
-      Amount: amount,
+      Amount: parseFloat(amount),
       Denom: denom,
     });
     if (!coinLiquidity) {
       obj.save();
     } else {
       if (operator === "+") {
-        coinLiquidity.Amount = coinLiquidity.Amount + amount;
+        coinLiquidity.Amount = coinLiquidity.Amount + parseFloat(amount);
       } else {
-        coinLiquidity.Amount = coinLiquidity.Amount - amount;
+        coinLiquidity.Amount = coinLiquidity.Amount - parseFloat(amount);
       }
 
       await CoinLiquidity.updateOne({ _id: coinLiquidity._id }, coinLiquidity);
