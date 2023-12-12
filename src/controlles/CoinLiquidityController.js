@@ -7,7 +7,7 @@ const getUserByToken = require("../helpers/get-user-by-token");
 module.exports = class CoinLiquidityController {
   static async swap(req, res, next) {
     const { offerDenom, offerAmount, askDenom } = req.body;
-    console.log(offerDenom, offerAmount, askDenom);
+
     if (offerDenom === "" || askDenom === "" || offerAmount === null) {
       res.status(422).json({ message: "Error try later." });
       return;

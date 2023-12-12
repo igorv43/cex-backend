@@ -5,7 +5,7 @@ module.exports = class CoinUserController {
   static async findDenom(req, res) {
     const { denom } = req.query;
     const user = await getUserByToken(req);
-    console.log(denom);
+
     try {
       const obj = await CoinUser.findOne({
         Denom: denom,

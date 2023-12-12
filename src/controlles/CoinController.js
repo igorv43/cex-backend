@@ -1,8 +1,13 @@
 const Coin = require("../models/Coin");
 module.exports = class CoinController {
-  // static createCoin(req, res) {
-  //   res.render("coin/create");
-  // }
+  static async find(req, res) {
+    try {
+      const obj = await Coin.find();
+      res.status(200).json(obj);
+    } catch (error) {
+      res.status(500).json({ message: error });
+    }
+  }
   static async register(req, res) {
     const {
       supply,
@@ -40,15 +45,3 @@ module.exports = class CoinController {
     }
   }
 };
-
-// http://localhost:5000/coin/register
-//   {
-
-//     "denom": "LUNC/USDT",
-//       "price": 5.00,
-//       "supply": 10000,
-//       "totalBuy": 5000,
-//       "totalSell": 0,
-//       "totalPriceBuy": 50000,
-//       "totalPriceSell": 0
-// }

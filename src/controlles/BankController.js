@@ -101,7 +101,7 @@ module.exports = class BankController {
 
           const bankObjc = await objBank.save();
 
-          //global._io.emit("candlestick_LUNC/USDT", market);
+          //global._io.emit("candlestick_"+coin+"/USDT", market);
           res.status(200).json({ message: "success", data: bankObjc });
         } else {
           res.status(500).json({ message: "insufficient amount" });
@@ -133,22 +133,12 @@ module.exports = class BankController {
     if (denom === "LUNC") {
       denomAmount = { uluna: parseInt(convertMicroAmount(amount)) };
     }
-    // console.log("achou 2", denomAmount);
-    //const f = new TxAPI(walletTerra);
-    // console.log("achou 1");
+
     const send = new MsgSend(
       walletTerra.key.accAddress,
       accAddressTo,
       denomAmount
     );
-    // console.log("achou 3");
-    // const tx = walletTerra.createAndSignTx({
-    //   msgs: [send],
-    //   memo: "test from terra.js!",
-    // });
-    // console.log("achou 4");
-    // const result = lcd.tx.broadcast(tx);
-    // console.log("achou 5");
 
     walletTerra
       .createAndSignTx({

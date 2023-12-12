@@ -59,12 +59,10 @@ io.on("connection", (socket) => {
 
   socket.on("alertUser", (idUser) => {
     if (idUser != null) {
-      console.log("acchou id", idUser);
       socket.join(idUser);
-
       io.to(idUser).emit("alertUser", {
         type: "market",
-        data: { message: "chegou ok." },
+        data: { message: "ok." },
       });
     }
   });
