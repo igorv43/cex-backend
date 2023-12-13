@@ -6,11 +6,13 @@ const Coin = mongoose.model(
     {
       Supply: { type: Number, require: true },
       Denom: { type: String, require: true },
+      MicroCoin: { type: String, require: true },
       TotalBuy: { type: Number },
       TotalSell: { type: Number },
       TotalPriceBuy: { type: Number },
       TotalPriceSell: { type: Number },
       Price: { type: Number },
+      Fee: { type: Number },
     },
     { timestamps: true }
   )

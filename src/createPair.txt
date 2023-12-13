@@ -4,21 +4,25 @@ Post
 {
     
     "denom": "LUNC/USDT",
+    "microCoin":"uluna",
       "price": 5.00,
       "supply": 10000,
       "totalBuy": 5000,
       "totalSell": 0,
       "totalPriceBuy": 50000,
-      "totalPriceSell": 0
+      "totalPriceSell": 0,
+      "fee":0.005
 }
 
  {
 
         "denom": "LUNC/USDT",
+        "microCoin":"uluna",
           "price": 5.00,
           "supply": 1000000,
           "totalBuy": 500000,
           "totalSell": 0,
           "totalPriceBuy": 5000000,
-          "totalPriceSell": 0
+          "totalPriceSell": 0,
+          "fee":0.005
     }

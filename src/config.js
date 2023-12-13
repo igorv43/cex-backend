@@ -9,6 +9,7 @@ const mnemonic =
   "neither flight wisdom surround runway soon east utility proof anchor picnic unable mobile armed produce creek report goat melt jewel cream plug gallery decade";
 const accAddress = "terra1e0gnsneylaav9hf9lunt9lpsljh2j4dzw7vcqv";
 corsOrigin = "http://localhost:3000";
+const accIdCEX = "6579dad12bcff7117f7356d8";
 module.exports = {
   db,
   mnemonic,
@@ -17,4 +18,5 @@ module.exports = {
   chainID,
   accAddress,
   corsOrigin,
+  accIdCEX,
 };

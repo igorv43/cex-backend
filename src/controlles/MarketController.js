@@ -4,6 +4,8 @@ const CoinUser = require("../models/CoinUser");
 const MarketExecution = require("../models/MarketExecution");
 const getUserByToken = require("../helpers/get-user-by-token");
 const { CommentsDisabledOutlined } = require("@mui/icons-material");
+const { accIdCEX } = require("../config");
+const User = require("../models/User");
 module.exports = class MarketController {
   static async buy(req, res, next) {
     MarketController.#execute(req, res, "buy");
@@ -300,6 +302,8 @@ module.exports = class MarketController {
   }
   static async #SaveDenomUser(type, denom, market, user) {
     //Exemple LUNC/USDT
+    const coin = await Coin.findOne({ Denom: denom });
+    const userCex = await User.findOne({ _id: accIdCEX });
     const pair = denom.split("/");
     const denom1 = pair[0];
     const denom2 = pair[1];
@@ -307,11 +311,16 @@ module.exports = class MarketController {
     if (type === "sell") {
       //Exemple USDT
       const total = market.Amount * market.Price;
-      MarketController.#SaveDenomUserPair(total, denom2, true, user);
+      const totalFee = total * coin.Fee;
+
+      MarketController.#SaveDenomUserPair(total - totalFee, denom2, true, user);
+      MarketController.#SaveDenomUserPair(totalFee, denom2, true, userCex);
     } else {
       //Exemple LUNC
       const total = market.Amount / market.Price;
-      MarketController.#SaveDenomUserPair(total, denom1, true, user);
+      const totalFee = total * coin.Fee;
+      MarketController.#SaveDenomUserPair(total - totalFee, denom1, true, user);
+      MarketController.#SaveDenomUserPair(totalFee, denom1, true, userCex);
     }
   }
   static async #SaveDenomUserPair(amount, denom, add, user) {
