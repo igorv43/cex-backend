@@ -115,76 +115,86 @@ module.exports = class MarketController {
 
   static async #calculateLiquidity(type, denom, objMarket, res) {
     let listMarket = null;
-    const typeDb = type == "sell" ? "buy" : "sell";
+    const typeDb = type === "sell" ? "buy" : "sell";
     const coinObj = await Coin.findOne({ Denom: denom });
-    // if (type == "sell") {
-    //   listMarket = await Market.Model.find({
-    //     $and: [
-    //       { Type: typeDb },
-    //       { Denom: denom },
-    //       { Status: { $in: ["Registered", "Running"] } },
-    //       {
-    //         $or: [
-    //           { Price: { $gte: objMarket.Price } },
-    //           {
-    //             $and: [
-    //               { Price: { $eq: objMarket.Price } },
-    //               { MarketPrice: true },
-    //             ],
-    //           },
-    //         ],
-    //       },
-    //     ],
-    //   })
-    //     .sort({ createdAt: 1 })
-    //     .limit(100);
-    // } else {
-    //   listMarket = await Market.Model.find({
-    //     $and: [
-    //       { Type: typeDb },
-    //       { Denom: denom },
-    //       { Status: { $in: ["Registered", "Running"] } },
-    //       {
-    //         $or: [
-    //           { Price: { $lte: objMarket.Price } },
-    //           {
-    //             $and: [
-    //               { Price: { $eq: objMarket.Price } },
-    //               { MarketPrice: true },
-    //             ],
-    //           },
-    //         ],
-    //       },
-    //     ],
-    //   })
-    //     .sort({ createdAt: 1 })
-    //     .limit(100);
-    // }
-    listMarket = await Market.Model.find({
-      $and: [
-        { Type: "sell" },
-        { Denom: denom },
-        { Status: { $in: ["Registered", "Running"] } },
-        {
-          $or: [
-            { Price: { $lte: objMarket.Price } },
-            {
-              $and: [
-                { Price: { $eq: objMarket.Price } },
-                { MarketPrice: true },
-              ],
-            },
-          ],
-        },
-      ],
-    })
-      .sort({ createdAt: 1 })
-      .limit(100);
+    if (type === "sell") {
+      listMarket = await Market.Model.find({
+        $and: [
+          { Type: typeDb },
+          { Denom: denom },
+          { Status: { $in: ["Registered", "Running"] } },
+          // {
+          //   $or: [
+          //     { Price: { $gte: objMarket.Price } },
+          //     {
+          //       $and: [
+          //         { Price: { $eq: objMarket.Price } },
+          //         { MarketPrice: true },
+          //       ],
+          //     },
+          //   ],
+          // },
+        ],
+      })
+        .sort({ Price: -1 })
+        .limit(200);
+    } else {
+      listMarket = await Market.Model.find({
+        $and: [
+          { Type: typeDb },
+          { Denom: denom },
+          { Status: { $in: ["Registered", "Running"] } },
+          {
+            $or: [
+              { Price: { $lte: objMarket.Price } },
+              {
+                $and: [
+                  { Price: { $lte: coinObj.Price } },
+                  { MarketPrice: true },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+        .sort({ Price: -1 })
+        .limit(200);
+    }
+    // listMarket = await Market.Model.find({
+    //   $and: [
+    //     { Type: "sell" },
+    //     { Denom: denom },
+    //     { Status: { $in: ["Registered", "Running"] } },
+    //     {
+    //       $or: [
+    //         { Price: { $lte: objMarket.Price } },
+    //         {
+    //           $and: [
+    //             { Price: { $eq: objMarket.Price } },
+    //             { MarketPrice: true },
+    //           ],
+    //         },
+    //       ],
+    //     },
+    //   ],
+    // })
+    //   .sort({ createdAt: 1 })
+    //   .limit(100);
     let CountAmount =
       objMarket.AmountExecuted == 0
         ? objMarket.Amount
         : objMarket.Amount - objMarket.AmountExecuted;
     for (let i = 0; i < listMarket.length; i++) {
+      if (type === "sell") {
+        if (
+          listMarket[i].Price < objMarket.Price ||
+          (listMarket[i].MarketPrice === true &&
+            listMarket[i].Price < coinObj.Price)
+        ) {
+          continue;
+        }
+      }
+
       if (listMarket[i].Amount - listMarket[i].AmountExecuted >= CountAmount) {
         const market01 = await Market.Model.findById(objMarket._id);
 
@@ -196,6 +206,7 @@ module.exports = class MarketController {
         if (market01.Amount == market01.AmountExecuted) {
           market01.Status = "Executed";
         }
+        //console.log("ac", market01);
         await Market.Model.updateOne({ _id: market01._id }, market01);
         global._io
           .to(market01.User._id.toString())
@@ -214,7 +225,10 @@ module.exports = class MarketController {
         }
         if (listMarket[i].Amount == listMarket[i].AmountExecuted) {
           listMarket[i].Status = "Executed";
+        } else {
+          listMarket[i].Status = "Running";
         }
+        // console.log("ac", listMarket[i]);
         await Market.Model.updateOne({ _id: listMarket[i]._id }, listMarket[i]);
         global._io
           .to(listMarket[i].User._id.toString())
@@ -241,6 +255,7 @@ module.exports = class MarketController {
             listMarket[i].Status = "Running";
           }
           listMarket[i].AmountExecuted = toAmountExecuted;
+          //console.log("ac", listMarket[i]);
           await Market.Model.updateOne(
             { _id: listMarket[i]._id },
             listMarket[i]
@@ -260,6 +275,7 @@ module.exports = class MarketController {
           } else {
             market01.Status = "Running";
           }
+          //console.log("ac4", market01);
           await Market.Model.updateOne({ _id: market01._id }, market01);
           global._io
             .to(market01.User._id.toString())
