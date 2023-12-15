@@ -39,7 +39,9 @@ module.exports = class BankController {
     //http://localhost:1317/cosmos/tx/v1beta1/txs?events=transfer.recipient%3D'terra1e0gnsneylaav9hf9lunt9lpsljh2j4dzw7vcqv'&pagination.offset=1&pagination.limit=100&order_by=ORDER_BY_DESC
     const { denom, amount, wallet, memo, txhash } = req.body;
     let amountConvert = 0;
+    const session = await mongoose.connection.startSession();
     try {
+      session.startTransaction();
       amountConvert = deconvertMicroAmount(amount);
 
       const ExistsBank = await Bank.findOne({ txhash: txhash });
@@ -100,18 +102,22 @@ module.exports = class BankController {
           });
 
           const bankObjc = await objBank.save();
-
+          session.startTransaction();
           //global._io.emit("candlestick_"+coin+"/USDT", market);
           res.status(200).json({ message: "success", data: bankObjc });
         } else {
+          await session.abortTransaction();
           res.status(500).json({ message: "insufficient amount" });
         }
       } else {
+        session.startTransaction();
         res.status(200).json({ message: "success" });
       }
     } catch (error) {
+      await session.abortTransaction();
       res.status(500).json({ message: error });
     }
+    session.endSession();
   }
   static async #TranferTerra(amount, denom, accAddressTo) {
     //https://terra-money.github.io/terra.js/

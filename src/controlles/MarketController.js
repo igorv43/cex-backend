@@ -1,3 +1,4 @@
+const mongoose = require("../db/conn");
 const { Market } = require("../models/Market");
 const Coin = require("../models/Coin");
 const CoinUser = require("../models/CoinUser");
@@ -59,8 +60,9 @@ module.exports = class MarketController {
         return;
       }
     }
-
+    const session = await mongoose.connection.startSession();
     try {
+      session.startTransaction();
       const user = await getUserByToken(req);
       const obj = new Market.Model({
         Denom: denom,
@@ -106,11 +108,14 @@ module.exports = class MarketController {
 
       MarketController.#calculateLiquidity(type, denom, newMarket, res);
       const listMarket = await Market.Model.find({ _id: newMarket._id });
+      await session.commitTransaction();
       global._io.emit("market_" + denom, listMarket);
       res.status(200).json({ message: "creatd", newMarket });
     } catch (error) {
+      await session.abortTransaction();
       res.status(500).json({ message: error });
     }
+    session.endSession();
   }
 
   static async #calculateLiquidity(type, denom, objMarket, res) {

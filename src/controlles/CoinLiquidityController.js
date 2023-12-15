@@ -12,7 +12,9 @@ module.exports = class CoinLiquidityController {
       res.status(422).json({ message: "Error try later." });
       return;
     }
+    const session = await mongoose.connection.startSession();
     try {
+      session.startTransaction();
       const user = await getUserByToken(req);
 
       if (askDenom === "USDT") {
@@ -83,13 +85,16 @@ module.exports = class CoinLiquidityController {
           objHist.save();
         }
       }
+      await session.commitTransaction();
       res.status(200).json({
         message: "exchange carried out successfully",
         data: { offerDenom, offerAmount, askDenom },
       });
     } catch (e) {
+      await session.abortTransaction();
       res.status(500).json({ message: e });
     }
+    session.endSession();
   }
   static async #PriceMarket(denom) {
     return await Coin.findOne({ Denom: denom + "/USDT" });
