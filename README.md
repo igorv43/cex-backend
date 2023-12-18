@@ -12,4 +12,21 @@ cd cex-backend
 npm install
 code .
 
-Edit
+Edit: src/config.js
+
+Modify the configuration file by updating the MongoDB database path according to your setup, along with the settings for the configured blockchain on your local machine. It's crucial not to forget configuring the 'corsOrigin' path where the frontend will run.
+
+const db = "mongodb://127.0.0.1:27017/cex";
+const pricesServer = "http://localhost:1317/terra/oracle/v1beta1/denoms/tobin_taxes";
+const lcdClientUrl = "http://localhost:1317";
+const chainID = "localterra";
+const mnemonic ="neither flight wisdom surround runway soon east utility proof anchor picnic unable mobile armed produce creek report goat melt jewel cream plug gallery decade";
+const accAddress = "terra1e0gnsneylaav9hf9lunt9lpsljh2j4dzw7vcqv";
+corsOrigin = "http://localhost:3000";
+const accIdCEX = "6579dad12bcff7117f7356d8";
+
+In the case of 'accIdCEX,' a detailed explanation will be provided shortly. This account is exclusively designated for CEX, where all transaction fees will be deposited.
+
+After completing all these configurations, enter the following command:
+
+npm run start
