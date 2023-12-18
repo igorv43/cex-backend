@@ -30,3 +30,8 @@ In the case of 'accIdCEX,' a detailed explanation will be provided shortly. This
 After completing all these configurations, enter the following command:
 
 npm run start
+
+![image](https://github.com/igorv43/cex-backend/assets/139166460/588bc623-b8a4-4815-a2ac-dd93d5ec4a08)
+
+Once this message appears in the terminal, it means that the API service is running correctly. Now, let's configure the frontend.
+
