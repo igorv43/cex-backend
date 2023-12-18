@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
+const { db } = require("../config");
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/cex", {
+  await mongoose.connect(db, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
