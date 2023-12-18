@@ -35,3 +35,5 @@ npm run start
 
 Once this message appears in the terminal, it means that the API service is running correctly. Now, let's configure the frontend.
 
+All the configuration details are available at this link: https://github.com/igorv43/cex-frontend
+
