@@ -5,8 +5,8 @@ const pricesServer =
 const lcdClientUrl = "http://localhost:1317";
 const chainID = "localterra";
 const mnemonic =
-  "neither flight wisdom surround runway soon east utility proof anchor picnic unable mobile armed produce creek report goat melt jewel cream plug gallery decade";
-const accAddress = "terra1e0gnsneylaav9hf9lunt9lpsljh2j4dzw7vcqv";
+  "attitude produce horn voice congress kiwi post day busy rebel enlist final swap dial risk avoid prevent flight wet roof usual game tragic problem";
+const accAddress = "terra19mtam7fcwxn0w05hhyyjv7dzqj68yq850wuh5q";
 corsOrigin = "http://localhost:3000";
 const accIdCEX = "6579dad12bcff7117f7356d8";
 module.exports = {
