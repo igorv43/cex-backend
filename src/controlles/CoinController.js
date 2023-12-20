@@ -2,6 +2,7 @@ const Coin = require("../models/Coin");
 const LCDClient = require("../utils/LCDClient");
 const { accIdCEX } = require("../config");
 const getUserByToken = require("../helpers/get-user-by-token");
+const { deconvertMicroAmount } = require("../helpers/MicroCoins");
 module.exports = class CoinController {
   static async find(req, res) {
     try {
@@ -52,7 +53,7 @@ module.exports = class CoinController {
       obj.map(async (k) => {
         await LCDClient.get(`/cosmos/bank/v1beta1/supply/${k.MicroCoin}`).then(
           async (response) => {
-            k.Supply = response.data.amount.amount;
+            k.Supply = deconvertMicroAmount(response.data.amount.amount);
             await Coin.updateOne({ _id: k._id }, k);
           }
         );
