@@ -48,13 +48,14 @@ module.exports = class CoinController {
   static async updateSupply(req, res) {
     try {
       const obj = await Coin.find();
+
       obj.map(async (k) => {
-        await LCDClient.get(
-          `cosmos/bank/v1beta1/supply/by_denom?denom=${k.MicroCoin}`
-        ).then(async (response) => {
-          k.Supply = response.amount.amount;
-          await Coin.updateOne({ _id: k._id }, k);
-        });
+        await LCDClient.get(`/cosmos/bank/v1beta1/supply/${k.MicroCoin}`).then(
+          async (response) => {
+            k.Supply = response.data.amount.amount;
+            await Coin.updateOne({ _id: k._id }, k);
+          }
+        );
       });
       res.status(200).json(obj);
     } catch (error) {
