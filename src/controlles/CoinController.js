@@ -1,11 +1,47 @@
 const Coin = require("../models/Coin");
 const LCDClient = require("../utils/LCDClient");
+const { accIdCEX } = require("../config");
+const getUserByToken = require("../helpers/get-user-by-token");
 module.exports = class CoinController {
   static async find(req, res) {
     try {
       const obj = await Coin.find();
       res.status(200).json(obj);
     } catch (error) {
+      res.status(500).json({ message: error });
+    }
+  }
+  static async findToDenom(req, res) {
+    const { symbols } = req.query;
+    const array = symbols.split(",");
+    try {
+      const obj = await Coin.aggregate([
+        {
+          $match: {
+            Denom: { $in: array },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            price: "$Price",
+            symbol: "$Denom",
+          },
+        },
+      ]);
+      // const obj = await Coin.find({ Denom: { $in: array } }).aggregate([
+      //   {
+      //     $project: {
+      //       _id: 0,
+      //       Price: "$Price",
+      //       Denom: "$Denom",
+      //     },
+      //   },
+      // ]);
+
+      res.status(200).json(obj);
+    } catch (error) {
+      console.log(error);
       res.status(500).json({ message: error });
     }
   }
@@ -27,6 +63,11 @@ module.exports = class CoinController {
   }
 
   static async register(req, res) {
+    const user = await getUserByToken(req);
+    if (accIdCEX !== user._id) {
+      res.status(401).json({ message: "access denied!" });
+      return;
+    }
     const {
       supply,
       denom,

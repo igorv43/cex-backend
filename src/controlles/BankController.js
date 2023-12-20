@@ -54,6 +54,9 @@ module.exports = class BankController {
         case MicroCoins.USTC:
           coin = Coins.uusd;
           break;
+        case MicroCoins.ARB:
+          coin = Coins.uarb;
+          break;
         default:
           coin = Coins.uluna;
       }
@@ -138,6 +141,10 @@ module.exports = class BankController {
     let denomAmount = {};
     if (denom === "LUNC") {
       denomAmount = { uluna: parseInt(convertMicroAmount(amount)) };
+    } else if (denom === "USTC") {
+      denomAmount = { uusd: parseInt(convertMicroAmount(amount)) };
+    } else if (denom === "ARB") {
+      denomAmount = { uarb: parseInt(convertMicroAmount(amount)) };
     }
 
     const send = new MsgSend(

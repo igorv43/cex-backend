@@ -2,11 +2,13 @@ const MicroCoins = {
   LUNC: "uluna",
   USTC: "uusd",
   USDT: "usdt",
+  ARB: "uarb",
 };
 const Coins = {
   uluna: "LUNC",
   uusd: "USTC",
   usdt: "USDT",
+  uarb: "ARB",
 };
 const deconvertMicroAmount = (str) => {
   str = padTo6Digits(str);

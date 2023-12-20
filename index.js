@@ -58,6 +58,26 @@ io.on("connection", (socket) => {
     io.emit("market_LUNC/USDT", market);
   });
 
+  socket.on("price_USTC/USDT", async (data) => {
+    const coin = await Coin.findOne({ Denom: data.Denom });
+    io.emit("price_USTC/USDT", coin);
+  });
+  socket.on("market_USTC/USDT", async (data) => {
+    const market = await Market.Model.find({ Denom: data.Denom })
+      .sort({ createdAt: -1 })
+      .limit(15);
+    io.emit("market_USTC/USDT", market);
+  });
+  socket.on("price_ARB/USDT", async (data) => {
+    const coin = await Coin.findOne({ Denom: data.Denom });
+    io.emit("price_ARB/USDT", coin);
+  });
+  socket.on("market_ARB/USDT", async (data) => {
+    const market = await Market.Model.find({ Denom: data.Denom })
+      .sort({ createdAt: -1 })
+      .limit(15);
+    io.emit("market_ARB/USDT", market);
+  });
   socket.on("alertUser", (idUser) => {
     if (idUser != null) {
       socket.join(idUser);
